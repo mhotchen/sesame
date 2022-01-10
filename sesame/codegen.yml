@@ -1,0 +1,23 @@
+schema: schema.graphql
+config:
+  # Since this is a custom mapping between Lambda and the resolvers, at present I have opted to ignore the info
+  # argument
+  optionalInfoArgument: true
+
+  # This provides support for federated/meshed graphs
+  federation: true
+
+  # All types should be immutable
+  immutableTypes: true
+
+  # This makes the resolvers types callable/typed as functions allowing for type-safe invoking
+  makeResolverTypeCallable: true
+
+  # This enforces that when a resolver returns an object, it must include the __typename value, which makes pattern
+  # matching work with AppSync as well as with union types
+  nonOptionalTypename: true
+generates:
+  src/graph.ts:
+    plugins:
+      - "@graphql-codegen/typescript"
+      - "@graphql-codegen/typescript-resolvers"

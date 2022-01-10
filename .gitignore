@@ -1,0 +1,7 @@
+.idea/
+.terraform
+.terraform.lock.hcl
+terraform.tfstate.backup
+.serverless
+secrets.auto.tfvars
+node_modules

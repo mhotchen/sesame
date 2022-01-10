@@ -1,0 +1,30 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  // "rhel-openssl-1.0.x" is the target of AWS Lambda. The generated compiled Prisma DB client is stored in node_modules
+  // The generated binary client file is copied to the AWS Lambda environment in serverless.ts
+  // The schema (this file) also needs to be copied
+  // the "native" target will generate the binary file for whatever platform you execute the `prisma generate` command
+  // on (so debian for my Linux, OSX for OSX, etc.). Native clients are not uploaded
+  binaryTargets = ["rhel-openssl-1.0.x", "native"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model CasbinRule {
+  id    Int     @id @default(autoincrement())
+  ptype String
+  v0    String?
+  v1    String?
+  v2    String?
+  v3    String?
+  v4    String?
+  v5    String?
+
+  @@map("casbin_rule")
+}

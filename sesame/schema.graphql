@@ -1,0 +1,50 @@
+enum ErrorType {
+    InvalidGroups
+    InternalError
+}
+type ErrorResult { type: ErrorType!, errorMessage: String! }
+type CreateUserSuccessResult { temporaryPassword: String! }
+
+# By enforcing the use of __typename in the resolvers, we are able to pattern match as part of the GraphQL query to
+# handle errors with union types:
+# createUser(email: "m@mhn.me", groups: ["admin"]) {
+#   __typename
+#   ... on ErrorResult {
+#     errorMessage
+#   }
+#   ... on CreateUserSuccessResult {
+#     temporaryPassword
+#   }
+# }
+union CreateUserResult = ErrorResult | CreateUserSuccessResult
+
+# AppSync does not support custom scalar types. AWS provide a few custom scalar types we could implement if we wanted
+# scalar TemporaryPassword <-- doesn't work/can't be configured
+# scalar AWSDateTime       <-- AppSync will validate the field matches an ISO 8601 string
+
+type Query {
+    # I wonder what this returns...
+    doesAppsyncSuck: Boolean!
+
+    # Although it would be tempting to consider the following 2 resolvers as mutations, it's important to know that
+    # Mutation and Query are functionally equivalent, except that Query graphql resolvers are executed in parallel
+    # whilst Mutation graphql resolvers are executed in sequence. So if you're trying to create 5 users in the same
+    # request for example, if these were in a mutation then each user would be created one after the other, but putting
+    # them as Query resolvers allows for AppSync to execute these in parallel
+    # Therefor, the design decision of when to use Mutation vs. Query isn't so much about whether state is mutated, but
+    # rather about whether sequencing is important or not. Even for resolvers that mutate state, it will be rare that
+    # we need to order the sequence within the same GraphQL query
+    createUser(email: String!, groups: [String]!): CreateUserResult!
+    createGroup(name: String!): ErrorResult # optional return type; doesn't return anything on success
+}
+
+# Assuming we set the interface for the resolver to be the same, then it would be possible to configure both a Query and
+# Mutation resolver that have the same functionality/interface, re-using the resolver code on the server, to allow
+# flexibility for the client apps to either sequence or distribute workloads. In this example, maybe we would want to
+# add support for the client apps to create a group, then create a user in that group, in a single request, whilst also
+# providing the option of creating multiple users, or multiple groups, in parallel using the Query resolvers, allowing
+# support for different types of user experience
+# type Mutation {
+#    createUser(email: String!, groups: [String]!): CreateUserResult!
+#    createGroup(name: String!): ErrorResult
+# }
