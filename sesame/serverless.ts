@@ -56,7 +56,7 @@ const serverlessConfiguration: AWS = {
       name: '${self:service}',
       schema: 'schema.graphql',
       authenticationType: 'API_KEY',
-      apiKeys: [ { name: 'default', description: 'default' } ],
+      apiKeys: [ { name: 'Default', description: 'Default' } ],
       mappingTemplates: config.mappingTemplates,
       dataSources: config.dataSources
     },

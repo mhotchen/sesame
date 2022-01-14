@@ -1,6 +1,8 @@
 const fs = require('fs')
 const { $ } = require('zx')
 
+$.verbose = false
+
 module.exports = class MigrateDatabase {
   constructor (serverless) {
     this.serverless = serverless

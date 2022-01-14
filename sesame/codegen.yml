@@ -16,8 +16,14 @@ config:
   # This enforces that when a resolver returns an object, it must include the __typename value, which makes pattern
   # matching work with AppSync as well as with union types
   nonOptionalTypename: true
+documents: features/support/*.graphql
 generates:
   src/graph.ts:
     plugins:
       - "@graphql-codegen/typescript"
       - "@graphql-codegen/typescript-resolvers"
+  features/support/graphqlClient.ts:
+    plugins:
+      - "@graphql-codegen/typescript"
+      - "@graphql-codegen/typescript-operations"
+      - "@graphql-codegen/typescript-graphql-request"

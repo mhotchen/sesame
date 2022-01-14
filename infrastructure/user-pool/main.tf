@@ -12,6 +12,11 @@ resource aws_cognito_user_pool pool {
   }
 }
 
+resource aws_cognito_user_group admin {
+  name = "admin"
+  user_pool_id = aws_cognito_user_pool.pool.id
+}
+
 resource aws_cognito_user_pool_client web {
   name = "${var.name}-web"
   user_pool_id = aws_cognito_user_pool.pool.id
@@ -39,4 +44,10 @@ resource aws_ssm_parameter client-web-id {
   name = "/user-pool/${var.name}/client-web-id"
   type = "SecureString"
   value = aws_cognito_user_pool_client.web.id
+}
+
+resource aws_ssm_parameter group-admin {
+  name = "/user-pool/${var.name}/group-admin"
+  type = "SecureString"
+  value = aws_cognito_user_group.admin.name
 }

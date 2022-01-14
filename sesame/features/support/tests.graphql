@@ -1,0 +1,22 @@
+query createUser($email: String!, $password: String!, $groups: [String]!) {
+    createUser(email: $email, password: $password, groups: $groups) {
+        __typename
+        ... on ErrorResult {
+            __typename
+            type
+        }
+        ... on UserCreateSuccessResult {
+            __typename
+            id
+        }
+    }
+}
+query createGroup($name: String!) {
+    createGroup(name: $name) {
+        __typename
+        ... on ErrorResult {
+            __typename
+            type
+        }
+    }
+}
