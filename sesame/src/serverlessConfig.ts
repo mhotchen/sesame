@@ -1,6 +1,6 @@
 import { AppSyncResolverHandler } from 'aws-lambda'
-import { resolvers } from './resolvers'
-import { createIntegratedContext, createInternalError } from './context'
+import { resolvers, internalError } from './resolvers'
+import { createIntegratedContext } from './context'
 // Avoid importing the graph directly to keep this config generic across all services/graphql implementations
 
 type Parent = Extract<keyof Required<typeof resolvers>, 'Query' | 'Mutation' | 'Subscription'>
@@ -31,7 +31,7 @@ export const  graphqlHandler: AppSyncResolverHandler<Args, Response> = async eve
     // Exact response type for internal errors is up to the service/context, to allow this file to remain generic across
     // all services. Note that it must match the Response type above, based on the resolver configuration, meaning it
     // must be a response type that is defined as part of the graph
-    return createInternalError()
+    return internalError()
   }
 }
 

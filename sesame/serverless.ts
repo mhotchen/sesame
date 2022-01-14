@@ -6,7 +6,7 @@ const config = getConfig(__dirname)
 const ssm = (namespace: string, key: string, service: string = config.serviceName) =>
   `\${ssm:/${namespace}/${service}/${key}}`
 
-const env: NodeJS.ProcessEnv = {
+const env: { [Key in keyof NodeJS.ProcessEnv]: any } = {
   DATABASE_URL: `postgresql://${(ssm('db', 'username'))}:${(ssm('db', 'password'))}@${(ssm('db', 'host'))}:${(ssm('db', 'port'))}/${(ssm('db', 'database'))}?schema=public`,
   USER_POOL_ID: ssm('user-pool', 'id'),
 }
@@ -15,7 +15,12 @@ const serverlessConfiguration: AWS = {
   variablesResolutionMode: "20210326",
   service: config.serviceName,
   frameworkVersion: '2',
-  plugins: ['serverless-appsync-plugin', 'serverless-esbuild', './src/MigrateDatabase.js'],
+  plugins: [
+    'serverless-appsync-plugin',
+    'serverless-esbuild',
+    './src/serverless-plugins/MigrateDatabase.js',
+    './src/serverless-plugins/StackOutput.js',
+  ],
   provider: {
     name: 'aws',
     region: 'eu-west-2',
@@ -28,8 +33,13 @@ const serverlessConfiguration: AWS = {
       ...env
     },
     iam: { role: { statements:
-      ['AdminCreateUser', 'AdminConfirmSignUp', 'AdminAddUserToGroup', 'CreateGroup', 'GetGroup']
-        .map(action => ({ Effect: 'Allow', Action: `cognito-idp:${action}`, Resource: ssm('user-pool', 'arn') }))
+      [
+        'AdminCreateUser',
+        'AdminAddUserToGroup',
+        'CreateGroup',
+        'GetGroup',
+        'AdminSetUserPassword',
+      ].map(action => ({ Effect: 'Allow', Action: `cognito-idp:${action}`, Resource: ssm('user-pool', 'arn') }))
     } },
   },
   functions: { ...config.handler },

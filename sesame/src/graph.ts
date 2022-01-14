@@ -15,40 +15,42 @@ export type Scalars = {
   _FieldSet: any;
 };
 
-export type CreateUserResult = ErrorResult | CreateUserSuccessResult;
-
-export type CreateUserSuccessResult = {
-  readonly __typename: 'CreateUserSuccessResult';
-  readonly temporaryPassword: Scalars['String'];
-};
-
 export type ErrorResult = {
   readonly __typename: 'ErrorResult';
   readonly type: ErrorType;
-  readonly errorMessage: Scalars['String'];
 };
 
 export enum ErrorType {
   InvalidGroups = 'InvalidGroups',
+  InvalidPassword = 'InvalidPassword',
+  EmailAlreadyInUse = 'EmailAlreadyInUse',
   InternalError = 'InternalError'
 }
 
 export type Query = {
   readonly __typename: 'Query';
   readonly doesAppsyncSuck: Scalars['Boolean'];
-  readonly createUser: CreateUserResult;
+  readonly createUser: UserCreateResult;
   readonly createGroup?: Maybe<ErrorResult>;
 };
 
 
 export type QueryCreateUserArgs = {
   email: Scalars['String'];
+  password: Scalars['String'];
   groups: ReadonlyArray<InputMaybe<Scalars['String']>>;
 };
 
 
 export type QueryCreateGroupArgs = {
   name: Scalars['String'];
+};
+
+export type UserCreateResult = UserCreateSuccessResult | ErrorResult;
+
+export type UserCreateSuccessResult = {
+  readonly __typename: 'UserCreateSuccessResult';
+  readonly id: Scalars['ID'];
 };
 
 
@@ -116,50 +118,51 @@ export type DirectiveResolverFn<TResult = {}, TParent = {}, TContext = {}, TArgs
 
 /** Mapping between all available schema types and the resolvers types */
 export type ResolversTypes = {
-  CreateUserResult: ResolversTypes['ErrorResult'] | ResolversTypes['CreateUserSuccessResult'];
-  CreateUserSuccessResult: ResolverTypeWrapper<CreateUserSuccessResult>;
-  String: ResolverTypeWrapper<Scalars['String']>;
   ErrorResult: ResolverTypeWrapper<ErrorResult>;
   ErrorType: ErrorType;
   Query: ResolverTypeWrapper<{}>;
   Boolean: ResolverTypeWrapper<Scalars['Boolean']>;
+  String: ResolverTypeWrapper<Scalars['String']>;
+  UserCreateResult: ResolversTypes['UserCreateSuccessResult'] | ResolversTypes['ErrorResult'];
+  UserCreateSuccessResult: ResolverTypeWrapper<UserCreateSuccessResult>;
+  ID: ResolverTypeWrapper<Scalars['ID']>;
 };
 
 /** Mapping between all available schema types and the resolvers parents */
 export type ResolversParentTypes = {
-  CreateUserResult: ResolversParentTypes['ErrorResult'] | ResolversParentTypes['CreateUserSuccessResult'];
-  CreateUserSuccessResult: CreateUserSuccessResult;
-  String: Scalars['String'];
   ErrorResult: ErrorResult;
   Query: {};
   Boolean: Scalars['Boolean'];
-};
-
-export type CreateUserResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CreateUserResult'] = ResolversParentTypes['CreateUserResult']> = {
-  __resolveType: TypeResolveFn<'ErrorResult' | 'CreateUserSuccessResult', ParentType, ContextType>;
-};
-
-export type CreateUserSuccessResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['CreateUserSuccessResult'] = ResolversParentTypes['CreateUserSuccessResult']> = {
-  temporaryPassword?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
-  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+  String: Scalars['String'];
+  UserCreateResult: ResolversParentTypes['UserCreateSuccessResult'] | ResolversParentTypes['ErrorResult'];
+  UserCreateSuccessResult: UserCreateSuccessResult;
+  ID: Scalars['ID'];
 };
 
 export type ErrorResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['ErrorResult'] = ResolversParentTypes['ErrorResult']> = {
   type?: Resolver<ResolversTypes['ErrorType'], ParentType, ContextType>;
-  errorMessage?: Resolver<ResolversTypes['String'], ParentType, ContextType>;
   __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
 };
 
 export type QueryResolvers<ContextType = any, ParentType extends ResolversParentTypes['Query'] = ResolversParentTypes['Query']> = {
   doesAppsyncSuck?: Resolver<ResolversTypes['Boolean'], ParentType, ContextType>;
-  createUser?: Resolver<ResolversTypes['CreateUserResult'], ParentType, ContextType, RequireFields<QueryCreateUserArgs, 'email' | 'groups'>>;
+  createUser?: Resolver<ResolversTypes['UserCreateResult'], ParentType, ContextType, RequireFields<QueryCreateUserArgs, 'email' | 'password' | 'groups'>>;
   createGroup?: Resolver<Maybe<ResolversTypes['ErrorResult']>, ParentType, ContextType, RequireFields<QueryCreateGroupArgs, 'name'>>;
 };
 
+export type UserCreateResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserCreateResult'] = ResolversParentTypes['UserCreateResult']> = {
+  __resolveType: TypeResolveFn<'UserCreateSuccessResult' | 'ErrorResult', ParentType, ContextType>;
+};
+
+export type UserCreateSuccessResultResolvers<ContextType = any, ParentType extends ResolversParentTypes['UserCreateSuccessResult'] = ResolversParentTypes['UserCreateSuccessResult']> = {
+  id?: Resolver<ResolversTypes['ID'], ParentType, ContextType>;
+  __isTypeOf?: IsTypeOfResolverFn<ParentType, ContextType>;
+};
+
 export type Resolvers<ContextType = any> = {
-  CreateUserResult?: CreateUserResultResolvers<ContextType>;
-  CreateUserSuccessResult?: CreateUserSuccessResultResolvers<ContextType>;
   ErrorResult?: ErrorResultResolvers<ContextType>;
   Query?: QueryResolvers<ContextType>;
+  UserCreateResult?: UserCreateResultResolvers<ContextType>;
+  UserCreateSuccessResult?: UserCreateSuccessResultResolvers<ContextType>;
 };
 

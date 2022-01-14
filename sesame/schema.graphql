@@ -1,26 +1,25 @@
-enum ErrorType {
-    InvalidGroups
-    InternalError
-}
-type ErrorResult { type: ErrorType!, errorMessage: String! }
-type CreateUserSuccessResult { temporaryPassword: String! }
+enum ErrorType { InvalidGroups, InvalidPassword, EmailAlreadyInUse, InternalError }
+type UserCreateSuccessResult { id: ID! }
+type ErrorResult { type: ErrorType! }
 
 # By enforcing the use of __typename in the resolvers, we are able to pattern match as part of the GraphQL query to
 # handle errors with union types:
-# createUser(email: "m@mhn.me", groups: ["admin"]) {
+# createUser(email: "m@mhn.me", password: "100Million!", groups: ["admin"]) {
 #   __typename
 #   ... on ErrorResult {
-#     errorMessage
+#     __typename
+#     type
 #   }
 #   ... on CreateUserSuccessResult {
-#     temporaryPassword
+#     __typename
+#     id
 #   }
 # }
-union CreateUserResult = ErrorResult | CreateUserSuccessResult
+union UserCreateResult = UserCreateSuccessResult | ErrorResult
 
 # AppSync does not support custom scalar types. AWS provide a few custom scalar types we could implement if we wanted
-# scalar TemporaryPassword <-- doesn't work/can't be configured
-# scalar AWSDateTime       <-- AppSync will validate the field matches an ISO 8601 string
+# scalar Password     <-- doesn't work/can't be configured
+# scalar AWSDateTime  <-- AppSync will validate the field matches an ISO 8601 string
 
 type Query {
     # I wonder what this returns...
@@ -34,8 +33,8 @@ type Query {
     # Therefor, the design decision of when to use Mutation vs. Query isn't so much about whether state is mutated, but
     # rather about whether sequencing is important or not. Even for resolvers that mutate state, it will be rare that
     # we need to order the sequence within the same GraphQL query
-    createUser(email: String!, groups: [String]!): CreateUserResult!
-    createGroup(name: String!): ErrorResult # optional return type; doesn't return anything on success
+    createUser(email: String!, password: String!, groups: [String]!): UserCreateResult!
+    createGroup(name: String!): ErrorResult # optional response type, returns nothing on success (unix style)
 }
 
 # Assuming we set the interface for the resolver to be the same, then it would be possible to configure both a Query and
