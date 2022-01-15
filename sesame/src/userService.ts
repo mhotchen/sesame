@@ -1,10 +1,13 @@
 import {
-  CognitoIdentityProviderClient,
-  AdminCreateUserCommand,
   AdminAddUserToGroupCommand,
+  AdminCreateUserCommand,
+  AdminGetUserCommand,
+  AdminSetUserPasswordCommand,
+  AdminUpdateUserAttributesCommand,
+  AttributeType,
+  CognitoIdentityProviderClient,
   CreateGroupCommand,
   GetGroupCommand,
-  AdminSetUserPasswordCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
 
 type ID = string
@@ -17,56 +20,67 @@ export type UserService = {
 }
 
 export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, poolId: string): UserService => ({
-  createUser: async (email: string, password: string) => {
-    console.log(email, password)
-
-    const createResult = await cognito.send(new AdminCreateUserCommand({
+  createUser: (email: string, password: string) => {
+    const attributes: AttributeType[] = [ { Name: "email", Value: email } ]
+    const getId = (attrs: AttributeType[]): ID => attrs.find(attr => attr.Name === 'sub')?.Value
+    const createUser = () => cognito.send(new AdminCreateUserCommand({
       UserPoolId: poolId,
       Username: email,
       TemporaryPassword: password,
-      UserAttributes: [ { Name: "email", Value: email } ],
+      UserAttributes: attributes,
     }))
-    await cognito.send(new AdminSetUserPasswordCommand({
+    const getUser = () => cognito.send(new AdminGetUserCommand({ UserPoolId: poolId, Username: email }))
+    const updateUserAttributes = () => cognito.send(new AdminUpdateUserAttributesCommand({
+      UserPoolId: poolId,
+      Username: email,
+      UserAttributes: attributes,
+    }))
+    const setPassword = () => cognito.send(new AdminSetUserPasswordCommand({
       UserPoolId: poolId,
       Username: email,
       Password: password,
       Permanent: true,
     }))
 
-    return createResult.User.Attributes.find(attr => attr.Name === 'sub').Value
+    return idempot(
+      async () => {
+        const createResult = await createUser()
+        await setPassword()
+
+        return getId(createResult.User.Attributes)
+      },
+      'UsernameExistsException',
+      async () => {
+        const [ user ] = await Promise.all([ getUser(), setPassword(), updateUserAttributes() ])
+
+        return getId(user.UserAttributes)
+      },
+    )
   },
 
-  isValidGroup: async group => {
-    try {
+  isValidGroup: group => idempot(
+    async () => {
       await cognito.send(new GetGroupCommand({
         UserPoolId: poolId,
         GroupName: group,
       }))
 
       return true
-    } catch (error) {
-      if (error?.name === 'ResourceNotFoundException') {
-        return false
-      }
+    },
+    'ResourceNotFoundException',
+    async () => false,
+  ),
 
-      throw error
-    }
-  },
-
-  createGroup: async (group: string) => {
-    try {
+  createGroup: group => idempot(
+    async () => {
       await cognito.send(new CreateGroupCommand({
         UserPoolId: poolId,
         GroupName: group
       }))
-    } catch (error) {
-      if (error?.name === 'GroupExistsException') {
-        return
-      }
-
-      throw error
-    }
-  },
+    },
+    'GroupExistsException',
+    async () => {},
+  ),
 
   addUserToGroup: async (email: string, group: string) => {
     await cognito.send(new AdminAddUserToGroupCommand({
@@ -76,3 +90,13 @@ export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, po
     }))
   },
 })
+
+const idempot = async <T>(happy: () => Promise<T>, acceptableError: string, sad: () => Promise<T>): Promise<T> => {
+  try {
+    return await happy()
+  } catch (error) {
+    if (error?.name === acceptableError) return await sad()
+
+    throw error
+  }
+}

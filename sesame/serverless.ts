@@ -39,6 +39,8 @@ const serverlessConfiguration: AWS = {
         'CreateGroup',
         'GetGroup',
         'AdminSetUserPassword',
+        'AdminGetUser',
+        'AdminUpdateUserAttributes',
       ].map(action => ({ Effect: 'Allow', Action: `cognito-idp:${action}`, Resource: ssm('user-pool', 'arn') }))
     } },
   },
