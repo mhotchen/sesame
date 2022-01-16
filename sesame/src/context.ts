@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client'
 import { Enforcer, newEnforcer } from 'casbin'
-import { newCognitoUserService, UserService } from './userService'
+import { cognitoUserService, UserService } from './userService'
 import { PrismaAdapter } from 'casbin-prisma-adapter'
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider'
 
@@ -22,10 +22,9 @@ export type Context = {
   enforcer: Enforcer
 }
 
-export const createIntegratedContext = async (env: NodeJS.ProcessEnv): Promise<Context> => {
-  const db = new PrismaClient()
-  const userService = newCognitoUserService(new CognitoIdentityProviderClient({}), env.USER_POOL_ID)
-  const enforcer = await newEnforcer('casbin.conf', new PrismaAdapter(db))
-
-  return { db, env, userService, enforcer }
-}
+export const integratedContext = async (env: NodeJS.ProcessEnv): Promise<Context> => ({
+  db: new PrismaClient(),
+  env,
+  userService: cognitoUserService(new CognitoIdentityProviderClient({}), env.USER_POOL_ID),
+  enforcer: await newEnforcer('casbin.conf', new PrismaAdapter(new PrismaClient()))
+})

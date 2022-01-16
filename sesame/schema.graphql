@@ -33,7 +33,7 @@ type Query {
     # Therefor, the design decision of when to use Mutation vs. Query isn't so much about whether state is mutated, but
     # rather about whether sequencing is important or not. Even for resolvers that mutate state, it will be rare that
     # we need to order the sequence within the same GraphQL query
-    createUser(email: String!, password: String!, groups: [String]!): UserCreateResult!
+    createUser(email: String!, password: String!, groups: [String!]!): UserCreateResult!
     createGroup(name: String!): ErrorResult # optional response type, returns nothing on success (unix style)
 }
 

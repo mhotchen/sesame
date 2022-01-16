@@ -1,38 +1,32 @@
 import { AppSyncResolverHandler } from 'aws-lambda'
+import {  Args, Response, Parent, FieldName, Fn } from './graph/types'
 import { resolvers, internalError } from './resolvers'
-import { createIntegratedContext } from './context'
-// Avoid importing the graph directly to keep this config generic across all services/graphql implementations
+import { integratedContext } from './context'
+import { exception, logAny } from './utils'
 
-type Parent = Extract<keyof Required<typeof resolvers>, 'Query' | 'Mutation' | 'Subscription'>
-type FieldName = keyof typeof resolvers[Parent]
-type Fn = typeof resolvers[Parent][FieldName]
-type Args = Exclude<Parameters<Fn>[1], {}>
-type Response = ReturnType<Fn>
+// a bit of type coercion using 'as' keyword in this file
 
 const name = 'graphqlHandler' // must match export const name for serverless.ts config
 export const  graphqlHandler: AppSyncResolverHandler<Args, Response> = async event => {
-  console.log(event)
-
   const type = event.info.parentTypeName as Parent
   const field = event.info.fieldName as FieldName
+  const resolver = resolvers[type][field] as Fn
 
-  try {
-    // I think we can use the first argument to the resolvers (parent) in situations where queries are nested
-    // (eg. query a User, which returns the option of getting their nested BlogPosts, then we can set the parent
-    // argument to the User object). There are some solutions to N+1 problems (AWS AppSync supports batch operations
-    // so if querying the nested BlogPosts means resolving one blog post at a time, a batch operation can be set up
-    // in AWS Lambda to pass in up to 100 graph queries to a single Lambda handler; this functionality seems new and
-    // isn't supported by the serverless appsync plugin right now)
-    // await instead of returning the resolver promise directly so we can handle exceptions
-    return await resolvers[type][field](undefined, event.arguments, await createIntegratedContext(process.env))
-  } catch (error) {
-    console.error(error)
+  type Result = { response: Response, error?: Error }
+  const { response, error }: Result = await exception(
+    async () => ({ response: await resolver({}, event.arguments, await integratedContext(process.env)) }),
+    async error => ({ response: internalError(), error })
+  )
 
-    // Exact response type for internal errors is up to the service/context, to allow this file to remain generic across
-    // all services. Note that it must match the Response type above, based on the resolver configuration, meaning it
-    // must be a response type that is defined as part of the graph
-    return internalError()
-  }
+  console.log(
+    type,
+    field,
+    logAny(event.arguments),
+    logAny(response),
+    error,
+  )
+
+  return response
 }
 
 export const getConfig = (rootDir: string) => ({
@@ -50,4 +44,6 @@ export const getConfig = (rootDir: string) => ({
 
 const serviceName = (rootDir: string) => rootDir.substring(rootDir.lastIndexOf('/') + 1)
 const handlerName = (rootDir: string) => `${__filename.replace(`${rootDir}/`, '').replace(/.ts$/, '')}.${name}`
-const fields = Object.keys(resolvers).flatMap(type => Object.keys(resolvers[type]).map(field => ({ type, field })))
+const fields = Object.keys(resolvers).flatMap(type => Object.keys(resolvers[type as Parent]).map(field =>
+  ({ type, field })
+))

@@ -1,7 +1,7 @@
 import { GraphQLClient } from 'graphql-request'
 import { getSdk } from './graphqlClient'
 import { Given, Then, When } from '@cucumber/cucumber'
-import { createIntegratedContext, Context } from '../../src/context'
+import { integratedContext, Context } from '../../src/context'
 import { StackOutput } from './stackOutput'
 
 const gql = getSdk(new GraphQLClient(
@@ -9,12 +9,12 @@ const gql = getSdk(new GraphQLClient(
   { headers: { "X-Api-Key": StackOutput.GraphQlApiKeyDefault } }
 ))
 
-const results = []
+const results: any[] = []
 const getIntegratedContext = (() => {
   let context: Context | undefined = undefined
   return async () => {
     if (context === undefined) {
-      context = await createIntegratedContext(process.env)
+      context = await integratedContext(process.env)
     }
 
     return context

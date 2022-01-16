@@ -39,7 +39,7 @@ export type Query = {
 export type QueryCreateUserArgs = {
   email: Scalars['String'];
   password: Scalars['String'];
-  groups: ReadonlyArray<InputMaybe<Scalars['String']>>;
+  groups: ReadonlyArray<Scalars['String']>;
 };
 
 
@@ -57,7 +57,7 @@ export type UserCreateSuccessResult = {
 export type CreateUserQueryVariables = Exact<{
   email: Scalars['String'];
   password: Scalars['String'];
-  groups: ReadonlyArray<InputMaybe<Scalars['String']>> | InputMaybe<Scalars['String']>;
+  groups: ReadonlyArray<Scalars['String']> | Scalars['String'];
 }>;
 
 
@@ -72,7 +72,7 @@ export type CreateGroupQuery = { readonly __typename: 'Query', readonly createGr
 
 
 export const CreateUserDocument = gql`
-    query createUser($email: String!, $password: String!, $groups: [String]!) {
+    query createUser($email: String!, $password: String!, $groups: [String!]!) {
   createUser(email: $email, password: $password, groups: $groups) {
     __typename
     ... on ErrorResult {

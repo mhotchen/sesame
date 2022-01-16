@@ -1,4 +1,4 @@
-query createUser($email: String!, $password: String!, $groups: [String]!) {
+query createUser($email: String!, $password: String!, $groups: [String!]!) {
     createUser(email: $email, password: $password, groups: $groups) {
         __typename
         ... on ErrorResult {

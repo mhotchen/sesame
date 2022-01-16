@@ -9,20 +9,21 @@ import {
   CreateGroupCommand,
   GetGroupCommand,
 } from '@aws-sdk/client-cognito-identity-provider'
+import { exception } from './utils'
 
 type ID = string
 
 export type UserService = {
   createUser: (email: string, password: string) => Promise<ID>
   isValidGroup: (group: string) => Promise<boolean>
-  createGroup: (group: string) => Promise<void>
-  addUserToGroup: (email: string, group: string) => Promise<void>
+  createGroup: (group: string) => Promise<null>
+  addUserToGroup: (email: string, group: string) => Promise<null>
 }
 
-export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, poolId: string): UserService => ({
+export const cognitoUserService = (cognito: CognitoIdentityProviderClient, poolId: string): UserService => ({
   createUser: (email: string, password: string) => {
     const attributes: AttributeType[] = [ { Name: "email", Value: email } ]
-    const getId = (attrs: AttributeType[]): ID => attrs.find(attr => attr.Name === 'sub')?.Value
+    const getId = (attrs: AttributeType[]): ID => attrs.find(attr => attr.Name === 'sub')?.Value ?? 'UNKNOWN'
     const createUser = () => cognito.send(new AdminCreateUserCommand({
       UserPoolId: poolId,
       Username: email,
@@ -42,23 +43,20 @@ export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, po
       Permanent: true,
     }))
 
-    return idempot(
+    return exception(
       async () => {
         const createResult = await createUser()
         await setPassword()
 
-        return getId(createResult.User.Attributes)
+        return getId(createResult.User?.Attributes ?? [])
       },
-      'UsernameExistsException',
-      async () => {
-        const [ user ] = await Promise.all([ getUser(), setPassword(), updateUserAttributes() ])
-
-        return getId(user.UserAttributes)
+      { 'UsernameExistsException': async () =>
+          getId((await Promise.all([ getUser(), setPassword(), updateUserAttributes() ]))[0].UserAttributes ?? [])
       },
     )
   },
 
-  isValidGroup: group => idempot(
+  isValidGroup: group => exception(
     async () => {
       await cognito.send(new GetGroupCommand({
         UserPoolId: poolId,
@@ -67,19 +65,19 @@ export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, po
 
       return true
     },
-    'ResourceNotFoundException',
-    async () => false,
+    { 'ResourceNotFoundException': async () => false },
   ),
 
-  createGroup: group => idempot(
+  createGroup: group => exception(
     async () => {
       await cognito.send(new CreateGroupCommand({
         UserPoolId: poolId,
         GroupName: group
       }))
+
+      return null
     },
-    'GroupExistsException',
-    async () => {},
+    { 'GroupExistsException': async () => null },
   ),
 
   addUserToGroup: async (email: string, group: string) => {
@@ -88,15 +86,7 @@ export const newCognitoUserService = (cognito: CognitoIdentityProviderClient, po
       Username: email,
       GroupName: group
     }))
+
+    return null
   },
 })
-
-const idempot = async <T>(happy: () => Promise<T>, acceptableError: string, sad: () => Promise<T>): Promise<T> => {
-  try {
-    return await happy()
-  } catch (error) {
-    if (error?.name === acceptableError) return await sad()
-
-    throw error
-  }
-}

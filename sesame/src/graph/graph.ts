@@ -38,7 +38,7 @@ export type Query = {
 export type QueryCreateUserArgs = {
   email: Scalars['String'];
   password: Scalars['String'];
-  groups: ReadonlyArray<InputMaybe<Scalars['String']>>;
+  groups: ReadonlyArray<Scalars['String']>;
 };
 
 

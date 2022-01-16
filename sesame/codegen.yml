@@ -18,7 +18,7 @@ config:
   nonOptionalTypename: true
 documents: features/support/*.graphql
 generates:
-  src/graph.ts:
+  src/graph/graph.ts:
     plugins:
       - "@graphql-codegen/typescript"
       - "@graphql-codegen/typescript-resolvers"
