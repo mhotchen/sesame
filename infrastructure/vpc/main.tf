@@ -16,7 +16,7 @@ resource aws_internet_gateway vpc {
 }
 
 resource aws_network_interface vpc {
-  subnet_id = aws_subnet.lambda-igw-b.id
+  subnet_id = aws_subnet.lambda-igw-a.id
   source_dest_check = false
 }
 
@@ -26,7 +26,7 @@ resource aws_eip vpc {
 
 resource aws_nat_gateway vpc {
   allocation_id = aws_eip.vpc.id
-  subnet_id = aws_subnet.lambda-igw-b.id
+  subnet_id = aws_subnet.lambda-igw-a.id
 }
 
 # Subnets
@@ -45,24 +45,38 @@ resource aws_subnet general-b {
   map_public_ip_on_launch = true
 }
 
+resource aws_subnet general-c {
+  vpc_id = aws_vpc.vpc.id
+  cidr_block = "172.31.32.0/20"
+  availability_zone = "${data.aws_region.current.name}c"
+  map_public_ip_on_launch = true
+}
+
 resource aws_subnet lambda-nat-a {
   vpc_id = aws_vpc.vpc.id
-  cidr_block = "172.31.64.0/20"
+  cidr_block = "172.31.48.0/20"
   availability_zone = "${data.aws_region.current.name}a"
   map_public_ip_on_launch = false
 }
 
 resource aws_subnet lambda-nat-b {
   vpc_id = aws_vpc.vpc.id
-  cidr_block = "172.31.32.0/20"
+  cidr_block = "172.31.64.0/20"
   availability_zone = "${data.aws_region.current.name}b"
   map_public_ip_on_launch = false
 }
 
-resource aws_subnet lambda-igw-b {
+resource aws_subnet lambda-nat-c {
   vpc_id = aws_vpc.vpc.id
-  cidr_block = "172.31.48.0/20"
-  availability_zone = "${data.aws_region.current.name}b"
+  cidr_block = "172.31.80.0/20"
+  availability_zone = "${data.aws_region.current.name}c"
+  map_public_ip_on_launch = false
+}
+
+resource aws_subnet lambda-igw-a {
+  vpc_id = aws_vpc.vpc.id
+  cidr_block = "172.31.96.0/20"
+  availability_zone = "${data.aws_region.current.name}a"
   map_public_ip_on_launch = false
 }
 
@@ -86,9 +100,14 @@ resource aws_route_table_association general-b {
   subnet_id = aws_subnet.general-b.id
 }
 
-resource aws_route_table_association lambda-igw-b {
+resource aws_route_table_association general-c {
   route_table_id = aws_route_table.igw.id
-  subnet_id = aws_subnet.lambda-igw-b.id
+  subnet_id = aws_subnet.general-c.id
+}
+
+resource aws_route_table_association lambda-igw-a {
+  route_table_id = aws_route_table.igw.id
+  subnet_id = aws_subnet.lambda-igw-a.id
 }
 
 # NAT
@@ -109,6 +128,11 @@ resource aws_route_table_association lambda-nat-a {
 resource aws_route_table_association lambda-nat-b {
   route_table_id = aws_route_table.lambda-nat.id
   subnet_id = aws_subnet.lambda-nat-b.id
+}
+
+resource aws_route_table_association lambda-nat-c {
+  route_table_id = aws_route_table.lambda-nat.id
+  subnet_id = aws_subnet.lambda-nat-c.id
 }
 
 # Security groups
@@ -174,6 +198,12 @@ resource aws_ssm_parameter lambda-subnet-b {
   value = aws_subnet.lambda-nat-b.id
 }
 
+resource aws_ssm_parameter lambda-subnet-c {
+  name = "/vpc/${var.name}/lambda-subnet-c"
+  type = "SecureString"
+  value = aws_subnet.lambda-nat-b.id
+}
+
 # Output
 
 output security-group-id {
@@ -181,5 +211,9 @@ output security-group-id {
 }
 
 output general-subnets {
-  value = [aws_subnet.general-a.id, aws_subnet.general-b.id]
+  value = [
+    aws_subnet.general-a.id,
+    aws_subnet.general-b.id,
+    aws_subnet.general-c.id
+  ]
 }

@@ -12,8 +12,8 @@ resource aws_db_subnet_group db {
 
 resource aws_db_instance db {
   identifier = var.name
-  engine = "postgres"
   name = var.name
+  engine = "postgres"
   username = "rP4tWt6uETggqC6z"
   password = var.password
   instance_class = "db.t3.micro"
