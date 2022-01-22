@@ -19,7 +19,7 @@ const serverlessConfiguration: AWS = {
     'serverless-appsync-plugin',
     'serverless-esbuild',
     './src/serverless-plugins/MigrateDatabase.js',
-    './src/serverless-plugins/StackOutput.js',
+    './src/serverless-plugins/ServiceInfo.js',
   ],
   provider: {
     name: 'aws',
@@ -57,7 +57,9 @@ const serverlessConfiguration: AWS = {
     appSync: {
       name: '${self:service}',
       schema: 'schema.graphql',
-      authenticationType: 'API_KEY',
+      authenticationType: 'AMAZON_COGNITO_USER_POOLS',
+      userPoolConfig: { userPoolId: ssm('user-pool', 'id'), defaultAction: 'ALLOW' },
+      logConfig: { level: 'ERROR' },
       apiKeys: [ { name: 'Default', description: 'Default' } ],
       mappingTemplates: config.mappingTemplates,
       dataSources: config.dataSources

@@ -26,8 +26,13 @@ module.exports = class MigrateDatabase {
     const stackName = `${serviceInfo.service.name}-${serviceInfo.provider.stage}`
     const outputs = result(await $`aws cloudformation describe-stacks --stack-name ${stackName}`)['Stacks'][0].Outputs
 
-    fs.writeFileSync('features/support/stackOutput.ts', `/* generated file do not edit */export const enum StackOutput {
-      ${outputs.map(output => `${output.OutputKey} = "${output.OutputValue}"`).join(',\n')}
+    const enumKeyValues = [
+      ...outputs.map(output => ({ key: output['OutputKey'], value: output['OutputValue'] })),
+      { key: 'ServiceName', value: serviceInfo.service.name },
+    ]
+
+    fs.writeFileSync('features/support/serviceInfo.ts', `/* generated file do not edit */export const enum ServiceInfo {
+      ${enumKeyValues.map(kv => `${kv.key} = "${kv.value}"`).join(',\n  ')}
     }`)
   }
 }

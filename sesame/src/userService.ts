@@ -7,7 +7,7 @@ import {
   AttributeType,
   CognitoIdentityProviderClient,
   CreateGroupCommand,
-  GetGroupCommand,
+  GetGroupCommand
 } from '@aws-sdk/client-cognito-identity-provider'
 import { exception } from './utils'
 
