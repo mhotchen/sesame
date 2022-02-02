@@ -46,8 +46,8 @@ const getIntegratedContext = (() => {
 })()
 
 Given('I am the user {string} in group {string}', async (email, group) => {
-  await (await getIntegratedContext()).userService.createUser(email, password)
-  await (await getIntegratedContext()).userService.addUserToGroup(email, group)
+  await (await getIntegratedContext()).userManagementService.createUser(email, password)
+  await (await getIntegratedContext()).userManagementService.addUserToGroup(email, group)
   graphqlClient.setHeader('Authorization', await login(email, password))
 })
 

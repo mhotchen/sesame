@@ -13,14 +13,17 @@ import { exception } from './utils'
 
 type ID = string
 
-export type UserService = {
+export type UserManagementService = {
   createUser: (email: string, password: string) => Promise<ID>
   isValidGroup: (group: string) => Promise<boolean>
   createGroup: (group: string) => Promise<null>
   addUserToGroup: (email: string, group: string) => Promise<null>
 }
 
-export const cognitoUserService = (cognito: CognitoIdentityProviderClient, poolId: string): UserService => ({
+export const cognitoUserManagementService = (
+  cognito: CognitoIdentityProviderClient,
+  poolId: string,
+): UserManagementService => ({
   createUser: (email: string, password: string) => {
     const attributes: AttributeType[] = [ { Name: "email", Value: email } ]
     const getId = (attrs: AttributeType[]): ID => attrs.find(attr => attr.Name === 'sub')?.Value ?? 'UNKNOWN'

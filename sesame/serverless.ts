@@ -1,9 +1,13 @@
 import type { AWS } from '@serverless/typescript'
-import { getConfig } from './src/serverlessConfig'
+import { getServiceName } from './src/serverless/config'
+import { graphqlHandlerConfig } from './src/graph/handler'
+import { addAdminPolicyConfig } from './src/admin/handler'
 
-const config = getConfig(__dirname)
+const graphqlHandler = graphqlHandlerConfig(__dirname)
+const addAdminPolicyHandler = addAdminPolicyConfig(__dirname)
+const serviceName = getServiceName(__dirname)
 
-const ssm = (namespace: string, key: string, service: string = config.serviceName) =>
+const ssm = (namespace: string, key: string, service: string = serviceName) =>
   `\${ssm:/${namespace}/${service}/${key}}`
 
 const env: { [Key in keyof NodeJS.ProcessEnv]: any } = {
@@ -13,7 +17,7 @@ const env: { [Key in keyof NodeJS.ProcessEnv]: any } = {
 
 const serverlessConfiguration: AWS = {
   variablesResolutionMode: "20210326",
-  service: config.serviceName,
+  service: serviceName,
   frameworkVersion: '2',
   plugins: [
     'serverless-appsync-plugin',
@@ -44,7 +48,7 @@ const serverlessConfiguration: AWS = {
       ].map(action => ({ Effect: 'Allow', Action: `cognito-idp:${action}`, Resource: ssm('user-pool', 'arn') }))
     } },
   },
-  functions: { ...config.handler },
+  functions: { ...graphqlHandler.handler, ...addAdminPolicyHandler.handler },
   package: {
     individually: true,
     patterns: [
@@ -61,8 +65,8 @@ const serverlessConfiguration: AWS = {
       userPoolConfig: { userPoolId: ssm('user-pool', 'id'), defaultAction: 'ALLOW' },
       logConfig: { level: 'ERROR' },
       apiKeys: [ { name: 'Default', description: 'Default' } ],
-      mappingTemplates: config.mappingTemplates,
-      dataSources: config.dataSources
+      mappingTemplates: graphqlHandler.mappingTemplates,
+      dataSources: graphqlHandler.dataSources,
     },
     esbuild: {
       bundle: true,
